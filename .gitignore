@@ -1,0 +1,41 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+
+# Node
+node_modules/
+npm-debug.log*
+
+# Temp / backup
+*.bak
+*.tmp
+*.orig
+*.swp
+*.log
+
+# Skill-specific (don't commit generated output)
+skills/*/results/
+skills/*/results.tsv
+skills/*/*.bak.YYYYMMDD-HHMM*
+
+# but keep the .gitkeep so empty dirs survive
+!skills/*/results/.gitkeep
