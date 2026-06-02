@@ -5,10 +5,16 @@ license: Complete terms in LICENSE.txt
 metadata:
   hermes:
     tags: [skills, authoring, anthropic-official, skill-md, evals]
-    related_skills: [gardener-skill, darwin-skill, skill-organizer]
+    related_skills: [gardener-skill, darwin-skill, skill-organizer, superpowers]
     toolkit_role: creator
-    notes: 4-skill 工具包之一（写/编辑/evals），与 gardener（思维优化）/darwin（流程优化）/organizer（整理）协作
+    notes: 4-skill 工具包之一（写/编辑/evals，Phase 3+），与 gardener（对话优化）/darwin（evals 优化）/organizer（整理）协作；Phase 1-2（脑暴+计划）由外部 superpowers 接管
 ---
+
+> **🛠 工具包融合（2026-06-02）**：本 skill 主管道是「**写 + evals + 迭代**」（Phase 3+）。  
+> **Phase 1-2（脑暴 + 写计划）** 由外部 `superpowers` 接管——见 `docs/skill-toolkit-coordination.md`。
+>
+> **何时先 superpowers？** 用户**没有 draft**、要"为什么要写这个 skill"想清楚时
+> **何时直 skill-creator？** 用户**已有 draft**、直接改 / 加 evals 时
 
 # Skill Creator
 

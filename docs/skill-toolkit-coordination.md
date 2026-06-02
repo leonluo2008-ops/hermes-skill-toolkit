@@ -41,6 +41,8 @@ metadata:
   ↓
 【Q2】说的是"新建/编辑/改内容/写新 skill"吗？
   → YES → skill-creator
+       → 用户已有 draft？→ 直接 skill-creator Phase 3+
+       → 用户想"为什么要写"？→ 先 superpowers 脑暴 → 再 skill-creator
   → NO  → 继续
   ↓
 【Q3】说的是"对话里发现的问题"吗？（"对话里这个 skill 不对"/"用户反馈"/"效果不好"）
@@ -51,6 +53,8 @@ metadata:
   → YES → darwin-skill
   → NO  → 默认进入 skill-creator（最常用）
 ```
+
+> **superpowers 例外**：如果是「**通用任务**」（不是写 skill，比如写代码 / 写文章 / debug），superpowers 才是主管道。本文档只覆盖「**写 skill 场景**」下的 superpowers 融合。
 
 ## 触发词设计（避免冲突）
 
@@ -91,6 +95,70 @@ metadata:
 - **流程**：扫描 → 类型预分 → 诊断 → 分类确认 → 归档 → 报告
 - **关键文件**：`data/user-universal-tools.yaml`（**不推远程**）
 - **核心原则**："用不上的，就不要出现在对应 agent 的 skill 清单里"
+
+---
+
+## superpowers 融合（2026-06-02）
+
+> **关键认知**：superpowers **不是工具包第 5 个 skill**——它是「**编写 skill 的方法论**」。
+> 工具包管「**skill 写完之后**」（evals/优化/整理），superpowers 管「**skill 写之前 + 写之中**」（脑暴/计划/子agent/TDD）。
+> 两者**正交**，流水线**串联**。
+
+### 流水线串联（轻嵌方案，Q1=A）
+
+```
+[superpowers 阶段]                 [skill-creator 阶段]
+─────────────────                  ────────────────────
+Phase 1: Brainstorm        ─→      Capture Intent
+Phase 2: Writing Plans     ─→      Write SKILL.md
+                                    
+                                    Phase 3: Test Prompts
+                                    Phase 4: Run (with-skill + baseline)
+                                    Phase 5: Grade
+                                    Phase 6: Iterate
+                                    
+[superpowers Phase 4: Systematic Debugging] ←── 如果 evals 暴露问题
+```
+
+**关键决策**：
+- **superpowers 负责**：脑暴 + 计划（Phase 1-2）—— 让"为什么写这个 skill"想清楚
+- **skill-creator 负责**：写 + evals + 迭代（Phase 3-6）—— 这是它的强项
+- **superpowers 不复制进 monorepo**——它仍是独立 skill，外部引用
+- **不重叠部分**：TDD（skill 不是代码）/ Code Review（skill 没 review 这一关）—— **跳过**
+
+### 触发词协调
+
+| 触发 | 走谁 |
+|------|------|
+| "我想写个 skill"、"做一个新 skill" | 先 **superpowers 脑暴** → 再走 **skill-creator** |
+| "我已经有 draft 了"、"改下这个 skill" | 直接 **skill-creator**（跳过 superpowers 脑暴） |
+| "这个 skill evals 跑分不对"、"evals 分数掉了" | **darwin-skill**（不涉及 superpowers） |
+| "对话里这个 skill 不对"、"用户反馈 skill 跑偏" | **gardener-skill**（不涉及 superpowers） |
+| "skill 太多"、"整理下" | **skill-organizer**（不涉及 superpowers） |
+
+**冲突边界**：
+- "**build**"：superpowers 优先（"build a feature"语境）；skill-creator 只在"build a skill"语境触发
+- "**plan**"：superpowers 优先（"writing plans"）；skill-creator 不直接接"plan"
+
+### superpowers 跟 gardener 的分工（都做根因分析）
+
+| 类型 | 走谁 |
+|------|------|
+| **代码/技术 bug**（"这个代码不工作"、"测试挂了"） | superpowers Phase 4（Systematic Debugging 4 阶段） |
+| **skill 优化方向**（"对话里这个 skill 跑出来不对"） | gardener-skill（Phase 1.5 根本原因） |
+| **skill eval 分数下降**（"evals 分数掉了"） | darwin-skill（8 维评分棘轮） |
+
+**判断信号**：
+- 听到「代码 / 测试 / git / commit」→ superpowers
+- 听到「skill / SKILL.md / 触发词 / 对话暴露问题」→ gardener / darwin
+
+### superpowers 不在 monorepo 里的原因
+
+- **它本身已经成熟**——obra 维护，社区认可，重复维护无价值
+- **不需要 monorepo 化的 git 流程**——它本身就有 release 流程
+- **只引用不复制**——`docs/skill-toolkit-coordination.md` 写清楚怎么用，superpowers 自己仓库不动
+
+**如果将来要把 superpowers 复制进 monorepo**，需要先回答「**维护痛点是什么**」——别为了"统一"而统一（园丁 vs authoring 教训）。
 
 ## 协作时序示例
 
@@ -133,6 +201,7 @@ metadata:
 
 ## 历史
 
+- 2026-06-02：superpowers 融合（Q1=A 轻嵌）—— superpowers 负责 Phase 1-2（脑暴+计划），skill-creator 接管 Phase 3+
 - 2026-06-02：园丁定位调整——从「优化思维类 skill」→「对话信号驱动的 skill 优化」；达尔文同步从「优化流程类」→「evals 量化优化」
 - 2026-06-01：建立工具包（首次明确分工）
 - 之前：`hermes-agent-skill-authoring`（已废弃并删除）
