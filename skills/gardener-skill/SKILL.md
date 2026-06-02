@@ -1,25 +1,27 @@
 ---
 name: gardener-skill
 description: |
-  园丁 skill：思维方式型 skill 的优化工具（4-skill 工具包之一）。
+  园丁 skill：从用户实际工作对话中发现问题并给出 skill 优化方案（4-skill 工具包之一）。
   用户明确分工：「用官方的 skill-creator 专门负责编写 skill，园丁和达尔文是优化 skill」。
-  园丁不写 skill（交给 skill-creator），只优化**思维类** skill 的「启发质量」。
+  园丁 = **对话信号驱动**——读真实对话记录，从中提取某个 skill 需要优化的地方，输出可执行的优化建议。
+  与达尔文互补：达尔文靠 evals 量化打分，园丁靠对话信号诊断。**不限定 skill 类型**——任何 skill 在对话里暴露问题都能介入。
   两层结构——底层优化部分（诊断→建议→验证）+ skill画像库。
-  触发词：园丁、gardener、优化思维方式型 skill、优化启发型 skill、思维类 skill 优化、skill 思维诊断、skill 启发不好
-  互补关系：skill-creator（编写） + darwin-skill（流程优化） + skill-organizer（整理审计）
+  触发词：园丁、gardener、对话诊断 skill、对话里发现问题、skill 跑出来不对、对话复盘、对话里 skill 出问题
+  互补关系：skill-creator（编写） + darwin-skill（量化评分） + skill-organizer（整理审计）
   Pitfall：4-skill 工具包决策树见 hermes-multi-agent 的 skill-toolkit-coordination.md
 metadata:
   hermes:
-    tags: [skills, optimization, gardener, thinking, heuristic, mentor]
+    tags: [skills, optimization, gardener, dialogue, diagnosis]
     related_skills: [skill-creator, darwin-skill, skill-organizer]
-    toolkit_role: thinking-optimizer
-    notes: 4-skill 工具包之一（思维类 skill 优化——诊断→建议→验证），与 skill-creator（编写）/darwin（流程优化）/organizer（整理）协作
+    toolkit_role: dialogue-diagnoser
+    notes: 4-skill 工具包之一（对话信号驱动——从真实对话中提取问题→输出优化建议），与 skill-creator（编写）/darwin（量化评分）/organizer（整理）协作
 ---
 
 # 园丁 skill
 
-> 思维方式型 skill 需要的是「培育」，不是「优化」。
-> 园丁不改造一棵树，而是让它长得更像它自己。
+> 园丁读对话——从你和 skill 的真实交互里，挖出这个 skill 哪里不对、应该怎么改。
+> **核心定位（2026-06-02 调整）**：园丁是「**对话信号驱动的 skill 优化工具**」。
+> 不是「优化思维方式」，是**读对话 + 出方案**。输入是真实对话记录，输出是针对某个 skill 的具体优化建议。
 > **2026-06-01 扩展**：园丁也是「种树人」——写新 skill（§A）+ 养老 skill（§B）一站式。
 
 ---
@@ -31,7 +33,7 @@ metadata:
 | 用户意图 | 触发词样例 | 对应章节 |
 |---------|----------|---------|
 | 写一个全新 skill | "写 skill"、"新建 skill"、"新做一个 skill" | **§A 写新 skill** |
-| 改/优化现有 skill | "优化 skill"、"改 skill"、"skill 启发不好" | **§B 改老 skill**（原 gardener 主流程）|
+| 改/优化现有 skill | "优化 skill"、"改 skill"、"对话里这个 skill 不对" | **§B 改老 skill**（原 gardener 主流程）|
 | 写完想自检 | "skill 写完了"、"这样写对吗" | **§C 写完自检清单** |
 | 不确定要写还是改 | "这个 skill 怎么搞" | **§D 路由决策树** |
 
@@ -74,7 +76,7 @@ metadata:
 | 2. 写 evals | **`skill-creator`** | `evals/evals.json` + test prompts |
 | 3. 跑测试 | **`skill-creator`** | with-skill + baseline 对比 |
 | 4. 评分 | **`skill-creator`** | 8 维评分 + viewer |
-| 5. 优化 | `skill-creator` **或** `darwin-skill` | 思维类问题→园丁 / 流程类问题→达尔文 |
+| 5. 优化 | `skill-creator` **或** `darwin-skill` 或 `gardener-skill` | evals 分数下降→darwin / 对话暴露问题→园丁 / description→skill-creator |
 
 **A.4-A.5（原 frontmatter 规范 + 目录结构 + 自检）已删除**——**官方 skill-creator 全部覆盖**。
 
@@ -111,7 +113,7 @@ metadata:
     ↓ 否 → 继续
         ↓
 【Q2】是否在描述"现有 skill 的问题"？
-    ↓ 是 → §B 改老 skill（思维类→园丁 / 流程类→darwin-skill）
+    ↓ 是 → §B 改老 skill（对话暴露问题→园丁 / evals 分数下降→darwin-skill）
     ↓ 否 → 继续
         ↓
 【Q3】是否在描述"我想要一个新能力/新 skill"？
@@ -119,18 +121,18 @@ metadata:
     ↓ 否 → 继续
         ↓
 【Q4】是否在描述"我想要优化某个 skill"？
-    ↓ 是 → 思维类问题？→ §B 园丁
-        → 流程类问题？→ darwin-skill
+    ↓ 是 → 对话里发现的问题？→ §B 园丁
+        → evals 分数下降？→ darwin-skill
         → description 触发词？→ skill-creator
 ```
 
 **反例**：
-- "我的 skill 跑出来效果差" → §B（问题在已有 skill）
+- "我的 skill 跑出来效果差" → §B（问题在已有 skill）—— **先确认是 evals 还是对话场景**
 - "我想让 hermes 能画图" → `skill-creator`（需要新 skill）
 - "skill 写完了你帮我看看" → `skill-creator`（走 evals）
 - "skill 太多了" → `skill-organizer`
-- "这个 skill 思维启发不准" → §B 园丁
-- "这个 skill 流程步骤乱" → `darwin-skill`
+- "对话里这个 skill 跑出来不对" → §B 园丁
+- "evals 分数掉了" → `darwin-skill`
 - "我之前写的那个 skill 优化下 description" → `skill-creator`
 
 ---
@@ -141,34 +143,18 @@ metadata:
 
 | | 达尔文 | 园丁 |
 |---|---|---|
-| 目标 | 棘轮优化，分数只升不降 | 培育启发性，不追求分数 |
-| 对象 | 操作流程型 skill | 思维方式型 skill |
-| 评估 | 子 agent 对比打分（可量化） | 创作者 prompt 对比（人在回路） |
-| 核心机制 | keep/revert 棘轮 | 启发质量偏好判断 |
-| 触发模式 | 问题触发 | 问题触发 |
+| 目标 | 棘轮优化，分数只升不降 | 从对话里挖问题，给出优化方案 |
+| 输入 | evals 量化测试 | 真实对话记录 |
+| 对象 | 不限（量化评分通用） | 不限（对话信号通用） |
+| 评估 | 子 agent 对比打分（可量化） | 创作者 prompt 对比 / 人在回路 |
+| 核心机制 | keep/revert 棘轮 | 诊断→建议→验证 |
+| 触发模式 | evals 分数下降时 | 对话暴露问题（用户纠正/效果不对）时 |
 
 **触发时机**：用户使用 skill 执行任务时发现问题，或者 skill 调试开发时实测发现问题，主动触发园丁。
 
 **被动原则**：没有用户指令，不主动扫描优化。
 
 **例外**：在 Phase 5（测试验证）期间，园丁的被动原则**暂停**。此时园丁应主动监控对话质量，识别问题信号，在用户反馈之前主动介入。
-
----
-
-## 思维方式型 skill 的识别
-
-满足以下任一条件的 skill，应启用园丁模式（而非达尔文）：
-
-1. **描述语言**：包含「思维方式」「创作方法」「启发者」「对话式」等关键词
-2. **结构特征**：
-   - 没有严格的线性步骤（没有「第1步→第2步→第3步」）
-   - 包含「如果...呢」「想象」「看见」等启发性表达
-   - 有「不是...而是...」的判断句
-3. **内容特征**：
-   - 有反面案例（错误做法）
-   - 有边界说明（什么不是这个思维方式）
-   - 有思维节点标注（如 [NODE: 发散节点]）
-4. **自我声明**：skill 里明确说「不需要达尔文式优化」或「不要把它变成步骤清单」
 
 ---
 
@@ -473,15 +459,17 @@ Phase 9: 更新画像库
 
 ### Phase 5: 测试验证
 
-**思维类 skill 的测试，必须有人参与，不是 AI 跑对比。**
+**园丁的测试（对话信号驱动），必须有人参与，不是 AI 跑对比。**
+
+> **注意**：以下「思维类 skill」段落（line 508-525）是 Anna 实测的具体场景示例，**不是限定**——任何通过对话优化的 skill 都可以套用同样的测试逻辑。
 
 ---
 
 #### 为什么不能只靠 AI 测试
 
-- AI 没有真正的「创作灵感」
+- AI 没有真正的「创作灵感」 / 「业务体感」
 - AI 的感受不是人的感受
-- 人类判断的是「这个 skill 能不能启发我」，不是「AI 跑出来的输出」
+- 人类判断的是「这个 skill 在真实场景里能不能解决问题」，不是「AI 跑出来的输出」
 - 模板化的输出可能是 AI 没有发现更好的表达方式，不是 skill 的问题
 
 ---
@@ -493,9 +481,9 @@ Phase 9: 更新画像库
 ```
 AI 发起对话
     ↓
-人作为创作者参与对话
+人作为真实用户参与对话
     ↓
-人在对话过程中实时感受到启发性
+人在对话过程中实时感受效果
     ↓
 AI 观察并记录人的真实反应
     ↓
@@ -511,13 +499,15 @@ AI 观察并记录人的真实反应
 1. **人必须真实参与对话**，不是看 AI 整理的输出
 2. **AI 是观察者**，记录人在对话中的反应（犹豫/兴奋/困惑/选选项）
 3. **关注对话过程**，不是关注输出结果
-4. **测试场景要真实**：用用户真正想写的题材，不是随意编一个 prompt
+4. **测试场景要真实**：用用户真正遇到的问题场景，不是随意编一个 prompt
 
 ---
 
-#### AI 监控探索阶段和执行阶段的边界
+#### AI 监控探索阶段和执行阶段的边界（**Anna 案例参考**）
 
-思维类 skill 的对话分为两个阶段：
+> **本节是 Anna 的具体场景**——其他 skill 应替换为该 skill 自己的「探索/执行」边界。
+
+对话类 skill（Anna 类型）通常分两个阶段：
 - **探索阶段**（定框架）：定故事方向、定核心角色、定世界设定
 - **执行阶段**（写作）：具体写故事、文字输出
 
@@ -536,6 +526,8 @@ AI 在测试中要监控：
 介入方式：用提问打断，不是给答案
 - 「停，你先告诉我，这个故事里发生了什么意外？」
 - 「在你说教育目标之前，我们先想清楚，森林里出了什么事？」
+
+> **本节是 Anna 实测得出的具体场景**——其他 skill 测试时，应替换为该 skill 自己的「探索/执行」边界，不能照搬「故事探索」的措辞。
 
 ---
 
@@ -573,7 +565,7 @@ AI 在测试中要监控：
     ↓
 对比两个版本的感受
     ↓
-判断哪个版本更能启发创作
+判断哪个版本更能解决问题（Anna 场景下是「创作体验」）
 ```
 
 **关键**：两个版本要由同一个人体验，才能准确对比。
@@ -636,12 +628,14 @@ AI 在测试中要监控：
 
 **判断标准（人在回路）**：
 
+> **本表是 Anna 实测的具体评估点**——其他 skill 应替换为该 skill 自己的判断标准。
+
 | 评估点 | 说明 |
 |---|---|
-| 创作者能形成自己的画面吗？ | skill 给了启发而不是答案 |
-| 有没有套路感？ | 还是说有新意 |
-| 开放性有没有被压缩？ | 还是说被「步骤化」了 |
-| 整体启发性变好了吗？ | 偏好 A 还是 B |
+| 用户能形成自己的解法吗？ | skill 给了诊断 + 方向，但不是死答案 |
+| 有没有套路感？ | 还是说诊断命中真实问题 |
+| 开放性有没有被压缩？ | 园丁的方案是「具体改动」还是「又一堆步骤」 |
+| 整体对话体验变好了吗？ | 偏好 A 版本还是 B 版本 |
 
 **决策**：
 - 确认优化方向 → 进入 Phase 7
@@ -698,12 +692,12 @@ git branch -D gardener/YYYYMMDD-优化摘要
 
 **园丁不单独存在**——**它是「skill 工具包」的一部分**：
 
-| Skill | 职责 | 视角 |
-|-------|------|------|
-| **`skill-creator`**（Anthropic 官方） | 创建 + 编辑 + 加 evals + 优化 description | 单 skill |
-| **`gardener-skill`**（本 skill） | 优化**思维类** skill | 单 skill + 思维 |
-| **`darwin-skill`** | 优化**流程类** skill | 单 skill + 流程 |
-| **`skill-organizer`** | 整理/审计/归档全 skill 集合 | 全 skill 集合 |
+| Skill | 职责 | 输入 | 视角 |
+|-------|------|------|------|
+| **`skill-creator`**（Anthropic 官方） | 创建 + 编辑 + 加 evals + 优化 description | 单 skill | 编写视角 |
+| **`gardener-skill`**（本 skill） | 优化 skill | **真实对话记录** | **对话信号视角** |
+| **`darwin-skill`** | 优化 skill | **evals 量化测试** | 量化评分视角 |
+| **`skill-organizer`** | 整理/审计/归档全 skill 集合 | 全 skill 集合 | 库管理视角 |
 
 **用户明确分工**（2026-06-01）："**用官方的 skill-creator 专门负责编写 skill，园丁和达尔文是优化 skill**"。
 
@@ -721,8 +715,8 @@ git branch -D gardener/YYYYMMDD-优化摘要
 **与 skill-creator 的关系**：
 - `skill-creator` = **主管道**（写 SKILL.md + evals + 评分）
 - `gardener-skill §A` = **园丁视角**（三条铁律 + 落位）——**不重复** skill-creator 的"如何写"
-- `gardener-skill §B` = **优化主流程**（**核心**——思维类 skill 优化）
-- `darwin-skill` = **流程类 skill 优化**（**互补**）
+- `gardener-skill §B` = **优化主流程**（**核心**——对话信号诊断 + 方案）
+- `darwin-skill` = **evals 量化优化**（**互补**）
 
 **Pitfall 教训**：**新发现 4-skill 工具包后，园丁 §A 跟 skill-creator 不应撞车**——**前者管"园丁视角"，后者管"如何写"**。
 
@@ -730,22 +724,35 @@ git branch -D gardener/YYYYMMDD-优化摘要
 
 ## 与达尔文的关系
 
-园丁是达尔文的**互补工具**，不是替代品。
+园丁是达尔文的**互补工具**，不是替代品。两者优化角度完全不同。
 
-| skill 类型 | 使用工具 |
+| 输入信号 | 使用工具 |
 |---|---|
-| 操作流程型（可量化） | 达尔文（分数棘轮） |
-| 思维方式型（不可量化） | 园丁（人类判断） |
+| evals 量化评分（多 prompt 对比、子 agent 跑分） | 达尔文（分数棘轮） |
+| 真实对话暴露问题（用户纠正、效果不对、反复调整） | 园丁（对话诊断 + 方案） |
 
 **决策树**：
 
 ```
-这个 skill 是思维方式型吗？
-    ↓ 是
-用园丁优化
-    ↓ 否
-用达尔文优化
+这个 skill 哪里出问题？
+    ↓
+evals 分数下降 / 多 prompt 对比
+    ↓ 是 → 达尔文（量化评分 + 棘轮）
+    ↓ 否 → 继续
+        ↓
+真实对话里发现的问题（用户反馈、对话卡住、效果不对）
+    ↓ 是 → 园丁（读对话 + 给方案）
+    ↓ 否 → 不需要优化
 ```
+
+**本质差异**：
+- **达尔文** = 「**多 prompt 跑分对比**」—— 适合能写 evals 的 skill（操作流程型、有明确测试点）
+- **园丁** = 「**单次对话深度分析**」—— 适合不能用 evals 量化的 skill（创作类、对话类、需要「人在回路」的 skill）
+
+**互补用例**：
+- Anna（对话驱动型） → 园丁主，达尔文辅（如果写得出 evals 的话）
+- hermes-gateway-result-routing（操作流程型） → 达尔文主，园丁不介入
+- skill-creator 本身的优化 → 达尔文（evals 已成熟）
 
 ---
 
@@ -766,17 +773,15 @@ git branch -D gardener/YYYYMMDD-优化摘要
 
 | 禁止 | 原因 |
 |---|---|
-| 增加「第X步」数量 | 把启发变成执行，压缩创作空间 |
-| 增加执行性检查清单 | 让人「执行」而不是「思考」 |
-| 把启发性问题变成填空模板 | 把「问什么问题」变成「答什么内容」 |
-| 把模糊性强行清晰化 | 模糊是故意的，开放才有创作空间 |
+| 把对话诊断变成「清单式输出」 | 园丁的输出应该是「从对话里发现什么 + 建议改什么」，不是「10 步操作手册」 |
+| 只给格式不改原理 | 园丁出方案时必须说「为什么这样改」——只说「加这一节」没价值 |
+| 把「对话信号」当 evals 数据 | 园丁看的是真实对话，不能拿多 prompt 跑分当输入 |
+| 跳过「对话分析」直接给方案 | 没分析过的优化建议 = 拍脑袋，违反园丁的「诊断→建议」核心机制 |
+| 把园丁当达尔文用 | 园丁不做 evals 跑分（那是达尔文）；达尔文也不读对话（那是园丁） |
 
 ---
 
 ## 相关文件
-## 相关文件
-## 相关文件
-- `references/skill-router.md` — 路由决策树 + 已确认的思维方式型 skill 列表
 - `references/huiben-design-framework.md` — 绘本设计框架（萌鸡小队结构 · 森林小镇松鼠系列结构）
 - `references/skill-meta-evaluation.md` — 技能元评测模式（达尔文评测园丁的发现）
 - `references/portrait-anna-russelmann-20260602.md` — Anna 优化记录（第一轮：世界观缺失问题 + 三阶段流程重构）
@@ -1058,8 +1063,8 @@ fi
 
 **正确做法**：
 - 全 skill 集合问题（整理/审计/归档/分类）→ 转发给 **skill-organizer**
-- 单 skill 优化（思维/启发质量）→ 园丁自己管
-- 触发词清晰区分：园丁触发 = "优化/诊断（单 skill）"；skill-organizer 触发 = "整理/审计/分类（多 skill）"
+- 单 skill 优化（对话信号驱动）→ 园丁自己管
+- 触发词清晰区分：园丁触发 = "对话诊断/方案（单 skill）"；skill-organizer 触发 = "整理/审计/分类（多 skill）"
 
 **检测方法**：用户提到"全局"或"多个 skill"时，**先考虑 skill-organizer**，不要默认"我管"。
 

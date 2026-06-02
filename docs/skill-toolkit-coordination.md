@@ -1,15 +1,22 @@
-# Skill 工具包协作规则（2026-06-01 实施）
+# Skill 工具包协作规则（2026-06-01 实施，2026-06-02 调整）
 
 > 4 个 skill 组成的工具包，分工明确 + 互相引用 + 实时触发。
+>
+> **2026-06-02 关键调整**：园丁定位从「**优化思维类 skill**」改为「**对话信号驱动的 skill 优化**」——不再限定 skill 类型。达尔文定位同步调整为「**evals 量化优化**」。
 
 ## 工具包成员
 
-| Skill | 职责 | 视角 | 安装位置 |
-|-------|------|------|----------|
-| **skill-creator** | 编写/编辑/evals/触发词优化 | 单 skill | `~/.hermes/skills/software-development/skill-creator/` |
-| **gardener-skill** | 优化思维类 skill | 单 skill + 思维诊断 | `~/.hermes/skills/gardener-skill/` |
-| **darwin-skill** | 优化流程类 skill（棘轮 + 8维评分） | 单 skill + 流程评分 | `~/.hermes/skills/darwin-skill/` |
-| **skill-organizer** | 整理/审计/归档/分类 | 全 skill 集合 | `~/.hermes/skills/software-development/skill-organizer/` |
+| Skill | 职责 | 输入 | 视角 | 安装位置 |
+|-------|------|------|------|----------|
+| **skill-creator** | 编写/编辑/evals/触发词优化 | 单 skill | 编写视角 | `~/.hermes/skills/software-development/skill-creator/` |
+| **gardener-skill** | 优化 skill | **真实对话记录** | **对话信号视角** | `~/.hermes/skills/gardener-skill/` |
+| **darwin-skill** | 优化 skill | **evals 量化测试** | 量化评分视角 | `~/.hermes/skills/darwin-skill/` |
+| **skill-organizer** | 整理/审计/归档/分类 | 全 skill 集合 | 库管理视角 | `~/.hermes/skills/software-development/skill-organizer/` |
+
+**核心差异**（2026-06-02 重新明确）：
+- **达尔文 = 多 prompt 跑分对比**（适合能写 evals 的 skill）
+- **园丁 = 单次对话深度分析**（适合不能量化的 skill——创作/对话/人在回路）
+- **不是「思维类 vs 流程类」**——是「对话信号 vs evals 量化」
 
 ## 互相引用
 
@@ -36,11 +43,11 @@ metadata:
   → YES → skill-creator
   → NO  → 继续
   ↓
-【Q3】说的是"思维启发质量好不好"吗？（"启发不准"/"思维乱"）
+【Q3】说的是"对话里发现的问题"吗？（"对话里这个 skill 不对"/"用户反馈"/"效果不好"）
   → YES → gardener-skill
   → NO  → 继续
   ↓
-【Q4】说的是"流程步骤清不清晰"吗？（"步骤乱"/"流程不清晰"/"自动优化"）
+【Q4】说的是"evals 分数下降/自动优化"吗？（"分数掉"/"auto-optimize"/"流程不清晰"）
   → YES → darwin-skill
   → NO  → 默认进入 skill-creator（最常用）
 ```
@@ -50,13 +57,13 @@ metadata:
 | Skill | 触发词（避免歧义） |
 |-------|-------------------|
 | **skill-creator** | 写、建、新建、create、author、edit、modify、create skill、写新 skill、create a skill、improve description |
-| **gardener-skill** | 思维、启发、好不好、思维乱、启发不准、inspire、heuristic |
-| **darwin-skill** | 流程、步骤、清晰、auto-optimize、auto optimize、棘轮、打分、rubric |
+| **gardener-skill** | 对话诊断、对话里发现问题、对话复盘、对话里 skill 出问题、对话信号、对话暴露问题 |
+| **darwin-skill** | evals、跑分、打分、auto-optimize、auto optimize、棘轮、rubric、量化 |
 | **skill-organizer** | 整理、审计、归档、太多、清单、分类、organize、audit、archive、universal tools |
 
 **冲突边界处理**：
-- "**improve**"：skill-creator 优先（"improve description / improve skill content"），gardener 只在"思维启发"语境触发
-- "**优化**"：gardener 思维类 + darwin 流程类都触发——**通过 description 区分**
+- "**improve**"：skill-creator 优先（"improve description / improve skill content"）
+- "**优化**"：园丁（对话信号） + 达尔文（evals 量化）都触发——**通过 description 区分**
 
 ## 4 个 skill 的核心方法论
 
@@ -66,14 +73,15 @@ metadata:
 - **关键文件**：`evals/evals.json` + `eval_metadata.json` + `grading.json` + `timing.json`
 - **触发器**：`description` 包含 100 词级的 "what + when to use"
 
-### gardener-skill
-- **目标**：思维方式型 skill 的"培育"——不追求分数棘轮，追求启发质量
-- **流程**：Phase 0 触发 → Phase 1 诊断 → Phase 2 建议 → Phase 3 测试设计 → Phase 5 监控 → Phase 5.5 成品扫描 → Phase 6 人类判断
+### gardener-skill（2026-06-02 重新定位）
+- **目标**：**从用户实际对话中提取问题 + 输出可执行的优化方案**
+- **流程**：Phase 0 触发 → Phase 1 对话分析 → Phase 1.5 根本原因 → Phase 2 建议生成 → Phase 3 测试设计 → Phase 5 人在回路测试 → Phase 5.5 成品扫描 → Phase 6 人类判断
 - **关键文件**：skill 画像库（每 skill 一份诊断+方案+验证）
 - **被动原则**：用户不指令不主动扫描；Phase 5 测试期间例外
+- **不限 skill 类型**：任何 skill 在对话里暴露问题都能介入
 
 ### darwin-skill
-- **目标**：操作流程型 skill 的"棘轮优化"——分数只升不降
+- **目标**：基于 evals 的"棘轮优化"——分数只升不降
 - **流程**：Phase 0 初始化 → Phase 0.5 测试 prompt 设计 → Phase 1 基线评估 → Phase 2 改进 → Phase 3 评估 → Phase 4 keep/revert
 - **关键文件**：`results.tsv`（每次优化结果）+ git 版本控制
 - **8 维评分**：6 维结构（60分）+ 2 维效果（40分）
@@ -93,25 +101,25 @@ metadata:
    user: "我想做一个 skill 来管视频剪辑"
    → skill-creator（写新 skill）
    → 写完跑 skill-creator 的自检 + evals
-   → 不满意？ → gardener（优化思维）或 darwin（优化流程）
+   → 不满意？→ 看问题来源：对话里暴露的→gardener / evals 分数下降→darwin
    ```
 
 2. **整理 skill 库**：
    ```
    user: "skill 太多了，整理下"
    → skill-organizer（先扫描分类）
-   → 留下来的 skill 质量不行？ → gardener / darwin
-   → 想新增一个？ → skill-creator
+   → 留下来的 skill 质量不行？→ gardener（看对话） / darwin（跑 evals）
+   → 想新增一个？→ skill-creator
    ```
 
-3. **优化现有 skill**：
+3. **优化现有 skill（2026-06-02 调整后）**：
    ```
-   user: "这个 skill 思维不准"
-   → gardener（思维类优化）
+   user: "对话里这个 skill 跑出来不对"
+   → gardener（对话信号诊断 + 方案）
    → 测试发现描述触发词不准？
    → skill-creator（专门优化 description）
-   → 改完发现流程乱了？
-   → darwin（流程类优化）
+   → 改完发现 evals 分数掉了？
+   → darwin（evals 量化优化）
    ```
 
 ## 注意事项
@@ -120,10 +128,12 @@ metadata:
 2. **不重叠**：触发词不混；冲突时用 description 区分
 3. **不冗余**：4 个 skill 不重复内容——单 skill 视角 3 个 + 集合视角 1 个
 4. **互相引用**：每个 skill 的 `related_skills` 都包含另外 3 个
-5. **协作而非替代**：skill-creator 也"improve existing skills"，但**默认**走 gardener/darwin（更专业）
+5. **协作而非替代**：skill-creator 也"improve existing skills"，但**默认**走 gardener（对话） / darwin（evals）
+6. **分工核心（2026-06-02）**：按**输入信号类型**分（对话 vs evals），不按 skill 类型分（思维 vs 流程）
 
 ## 历史
 
+- 2026-06-02：园丁定位调整——从「优化思维类 skill」→「对话信号驱动的 skill 优化」；达尔文同步从「优化流程类」→「evals 量化优化」
 - 2026-06-01：建立工具包（首次明确分工）
 - 之前：`hermes-agent-skill-authoring`（已废弃并删除）
 - 之前：gardener-skill 包含 §A 写新 skill（已重构让位 skill-creator）
