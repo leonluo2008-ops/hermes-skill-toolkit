@@ -1,6 +1,6 @@
 ---
 name: darwin-skill
-description: "Darwin Skill (达尔文.skill): autonomous skill optimizer inspired by Karpathy's autoresearch. Evaluates SKILL.md files using an 8-dimension rubric (structure + effectiveness), runs hill-climbing with git version control, validates improvements through test prompts, and generates visual result cards. Use when user mentions \"优化skill\", \"skill评分\", \"自动优化\", \"auto optimize\", \"skill质量检查\", \"达尔文\", \"darwin\", \"帮我改改skill\", \"skill怎么样\", \"提升skill质量\", \"skill review\", \"skill打分\"."
+description: "Darwin Skill (达尔文.skill): autonomous skill optimizer inspired by Karpathy's autoresearch. Evaluates SKILL.md files using an 8-dimension rubric (structure + effectiveness), runs hill-climbing with git version control, validates improvements through test prompts, and generates visual result cards. Use when user mentions \"优化skill\", \"skill评分\", \"自动优化\", \"auto optimize\", \"skill质量检查\", \"达尔文\", \"darwin\", \"帮我改改skill\", \"skill怎么样\", \"提升skill质量\", \"skill review\", \"skill打分\", \"园丁移交\", \"接收交接包\", \"验证园丁方案\", \"gardener 移交\"."
 license: Apache-2.0
 metadata:
   hermes:
@@ -84,6 +84,45 @@ autoresearch 的精髓：
 3. 初始化 results.tsv（如不存在）
 4. 读取现有 results.tsv 了解历史优化记录
 ```
+
+### Phase 0.3: 接收园丁交接包（**2026-06-03 新增**）
+
+> **触发条件**：本次任务**来自园丁**（gardener-skill Phase 9.5 移交）—— 不是用户直接发起的"优化 X skill"。
+
+**接收清单**（来自园丁的"达尔文交接包"）：
+
+1. **test-prompts.json** — 3-5 个测试 prompt + `expected_should_trigger` / `expected_reason`
+2. **改动摘要**（≤200 字）— 改了什么 + 为什么改 + 预期提升哪个维度
+3. **验证目标** — 基线分数 / 目标分数 / 重点关注维度
+4. **耗时预估** — 预估分钟数 / 是否需要 subagent 嵌套 / `eval_mode` / 降级条件
+5. **路径前置检查清单** — 园丁已自检 5 项（skill 目录存在 / SKILL.md 可写 / 格式合规 / rubric 适用 / results.tsv 存在）
+
+**接收流程**：
+
+```
+收到园丁交接包
+    ↓
+【校验 1】test-prompts.json 格式合规？
+  ├── ✅ 通过 → 写入 skill 目录的 test-prompts.json
+  └── ❌ 失败 → **回退通知园丁**（"test-prompts 格式不合规"）→ 园丁补 → 重新接收
+    ↓
+【校验 2】路径前置检查清单 5 项都通过？
+  ├── ✅ 全部通过 → 进入 Phase 0.5（沿用交接包的 test-prompts）
+  └── ⚠️ 1+ 项未通过 → 评估：
+      ├── 可自动修复（如 results.tsv 缺失 → 先跑基线补上）→ 修复后继续
+      └── 不可自动修复（如 skill 目录不存在）→ **回退通知园丁** → 园丁重做路径检查
+    ↓
+【校验 3】耗时预估在可接受范围？
+  ├── ✅ < 10 分钟 → eval_mode=full_test
+  └── ⚠️ > 10 分钟 → eval_mode=dry_run 兜底（避免阻塞园丁流程）
+    ↓
+进入 Phase 0.5（test-prompts 已就位，跳过设计）
+```
+
+**关键原则**：
+- 接收不等于接受——**每个校验步骤都可以回退给园丁**
+- **不要再让园丁做一遍 test-prompts 设计**——达尔文从园丁那里继承
+- **如果交接包某项缺失** → 不要猜，**回退给园丁补**（不替园丁做决定）
 
 ### Phase 0.5: 测试Prompt设计
 
@@ -231,6 +270,35 @@ for each skill:
 1. [skill-A] 补充了边界条件处理，测试输出质量提升明显
 2. [skill-B] 重组了workflow结构，baseline对比优势增大
 ```
+
+### Phase 3.5: 回退通知园丁（**2026-06-03 新增**）
+
+> **触发条件**：本次任务**来自园丁**（Phase 0.3 接收过交接包）**且** 验证结果不理想。
+
+**触发场景**：
+
+| 场景 | 园丁需要什么 | 通知格式 |
+|------|------------|---------|
+| **棘轮 revert**（改后分数 ≤ 改前） | 重新分析诊断 | "X skill 改动 revert，原分数 Y，新分数 Z，建议回到 Phase 1 重新分析" |
+| **路径前置检查发现不可修复** | 重新做路径检查 | "路径校验失败：[具体项]，需重新确认 [具体问题]" |
+| **test-prompts 触发不到改动点** | 补 test-prompts | "test-prompts 触发不到 [具体改动点]，需补 [N] 个 prompt" |
+| **耗时超时降级 dry_run** | 园丁接受 dry_run 结果 | "达尔文跑了 X 分钟超时，降级 dry_run，结果 [具体说明]" |
+| **8 维 rubric 不适用**（创作类/元组件） | 跳过达尔文 | "本 skill 类型不适合 evals 量化，达尔文跳过，回到 Phase 6 人类判断" |
+
+**通知格式**（写到 results.tsv + 飞书发用户）：
+
+```tsv
+timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode	source
+2026-06-03T15:00	<commit>	<skill>	<old>	<new>	revert	<dim>	回退通知园丁：<具体原因>	full_test	gardener-handover
+```
+
+**关键字段**：
+- `source = gardener-handover` — 标识这是园丁移交任务
+- `note` 列写明回退的具体原因（园丁能据此回到 Phase 1 重新分析）
+
+**不通知的情况**（达尔文自己发起的优化，不是园丁移交）：
+- `source` 留空 —— `source = ""` 表示非园丁移交
+- revert 写普通格式，不带"回退通知园丁"前缀
 
 ---
 
