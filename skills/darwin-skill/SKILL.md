@@ -309,7 +309,27 @@ timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
 2026-03-31T10:00	baseline	huashu-proofreading	-	78	baseline	-	初始评估	full_test
 2026-03-31T10:05	a1b2c3d	huashu-proofreading	78	84	keep	边界条件	补充fallback	full_test
 2026-03-31T10:10	b2c3d4e	huashu-proofreading	84	82	revert	指令具体性	过度细化	dry_run
+2026-06-03T15:30	7fd7f80	hermes-multi-agent	88.3	88.3	validate	全维度	full_test 验证 dry_run 评分方法（delta=0.0）	full_test
 ```
+
+**status 状态枚举**（4 个值）：
+
+| status | 含义 | 何时用 |
+|--------|------|--------|
+| `baseline` | 初始评估 | 第一次跑某 skill 的 8 维打分时 |
+| `keep` | 改动后分数 > 旧分数，保留 | 棘轮决策保留改动 |
+| `revert` | 改动后分数 ≤ 旧分数，回退 | 棘轮决策回退改动 |
+| `validate` | full_test 跑完分数无变化 | **用 full_test 校准 dry_run / 验证方法有效性**（不是改进也不是回退）|
+
+**validate 与 keep 的关键区别**：
+- `keep` 有"保留了某次具体改动"的语义（commit 引用了具体改动 commit）
+- `validate` 无改动语义——只是"用 full_test 跑了一遍，没出 bug，方法对"
+- validate 行**不计入棘轮决策**——只是评分方法学的元数据
+
+**validate 适用场景**：
+- 元组件类 skill（hermes-multi-agent 等）无法 subagent 独立评分，**用 full_test 校准 dry_run 准不准**
+- 新 test-prompts 跑一遍 baseline，确认分母合理
+- 定期 sanity check（防止评分方法本身腐化）
 
 新增 `eval_mode` 列：`full_test`（跑了子agent测试）或 `dry_run`（模拟推演）。
 文件位置：`.claude/skills/darwin-skill/results.tsv`
