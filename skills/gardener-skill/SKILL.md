@@ -1165,6 +1165,47 @@ fi
 
 **关联**：完整 git 同步 + 安装流程 + push 网络 workaround 见 `hermes-multi-agent/references/skill-installation-procedure.md`。
 
+### Pitfall: patch 工具偶发"删除未指定段落"——SKILL.md 长文件必跑 diff 范围检查
+
+**触发条件**：用 `patch` 工具修改**长** SKILL.md（>1000 行）时，**old_string 只匹配标题但实际删除范围超出预期**。
+
+**错误后果**（2026-06-03 picturebook-video v10 升级实测）：
+- 操作：给 v3 范式正文加"❌ 已弃用"标记（4 行改动）
+- 实际 diff：`+4 / -42`（删了 42 行 = v9 出现的工作方法论教训 + 单测门 SOP 段）
+- 这些**不属于 patch 范围**——但被 patch 工具静默删了
+- 恢复：`git checkout HEAD -- SKILL.md` → 重新 patch（更小心 + 更小 old_string）→ 验证 `+11/-5` 合理
+- 教训写入 commit message（`bea1645`）
+
+**根因推测**：patch 工具对 unicode 行号定位 + 上下文匹配有边界 case——长文件中**同标题多次出现**或**old_string 模糊匹配**可能误删。
+
+**正确做法**（**所有 SKILL.md 修改后必跑 3 步验证**）：
+
+```bash
+# 1. diff 范围合理性
+git diff --stat
+# 预期：改动量 ≤ 预期 × 1.5
+# 超出 = 立即 git checkout HEAD -- <file> + 重新做
+
+# 2. 关键内容还在
+grep -c "<关键段标题1>\|<关键段标题2>" SKILL.md
+# 验证：count 应该跟修改前一致
+
+# 3. patch 范围可控
+# 永远用**最小** old_string（单行标题 + 1 行上下文）而非大段
+```
+
+**判断标准**：
+- diff 改动量 **≤ 预期** → 安全
+- 改动量 **= 预期 × 2-5** → 立即 `git diff` 细看是不是误删
+- 改动量 **> 预期 × 5** → 立即 `git checkout HEAD -- <file>` + 重新做
+
+**预防**：
+- patch 时 `old_string` **尽量只含 1 行**（标题行）+ 必要的最小上下文
+- 长 SKILL.md (>1500 行) 优先**用 write_file 全量重写**而非 patch
+- patch 工具 + 写完 grep 关键内容**必跑**——不要信任 patch 工具的"我只改了 X 行"
+
+**检测方法**：当 `git diff --stat` 改动量跟"你写了几行"对不上时，**怀疑误删**。
+
 ### Pitfall: skill 库管理（整理/审计/归档）不归园丁管——归 skill-organizer
 
 **触发条件**：用户说"skill 太多"、"哪些该删"、"整理 skill 库"——**园丁想接管**。
