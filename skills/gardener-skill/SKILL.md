@@ -36,6 +36,7 @@ metadata:
 | 改/优化现有 skill | "优化 skill"、"改 skill"、"对话里这个 skill 不对" | **§B 改老 skill**（原 gardener 主流程）|
 | 写完想自检 | "skill 写完了"、"这样写对吗" | **§C 写完自检清单** |
 | 不确定要写还是改 | "这个 skill 怎么搞" | **§D 路由决策树** |
+| 园丁方案出完，要量化验证 | "evals 跑分"、"量化验证"、"打分验证" | **Phase 9.5 → 达尔文**（见"园丁 → 达尔文 交接协议"）|
 
 **为什么合并**（2026-06-01 用户反馈）：
 - 维护痛点：写 skill 之前要加载 authoring，改 skill 要加载 gardener——**两个 skill 维护累**
@@ -257,6 +258,7 @@ Phase 6: 人类判断
 Phase 7: 循环优化
 Phase 8: 提交 + 推送
 Phase 9: 更新画像库
+Phase 9.5: 移交达尔文（**新机制，2026-06-03**）→ 见「园丁 → 达尔文 交接协议」节
 ```
 
 ---
@@ -688,71 +690,182 @@ git branch -D gardener/YYYYMMDD-优化摘要
 
 ---
 
-## 4-Skill 工具包定位（2026-06-01 决策）
-
-**园丁不单独存在**——**它是「skill 工具包」的一部分**：
-
-| Skill | 职责 | 输入 | 视角 |
-|-------|------|------|------|
-| **`skill-creator`**（Anthropic 官方） | 创建 + 编辑 + 加 evals + 优化 description | 单 skill | 编写视角 |
-| **`gardener-skill`**（本 skill） | 优化 skill | **真实对话记录** | **对话信号视角** |
-| **`darwin-skill`** | 优化 skill | **evals 量化测试** | 量化评分视角 |
-| **`skill-organizer`** | 整理/审计/归档全 skill 集合 | 全 skill 集合 | 库管理视角 |
-
-**用户明确分工**（2026-06-01）："**用官方的 skill-creator 专门负责编写 skill，园丁和达尔文是优化 skill**"。
-
-### §A 跟 skill-creator 的分工（**已 2026-06-01 拍板**）
-
-**§A 当前的内容**（2026-06-01 重构后）：
-- A.1 三条铁律（**园丁独有**——占位符思维 / 示例≠模板素材 / 原理 > 格式）
-- A.2 SKILL.md 落位（**园丁独有**——官方没明确说）
-- A.3 主管道指引（**新加**——直接指向 `skill-creator` 步骤表）
-
-**A.4-A.5 已删除**（frontmatter 规范 / 目录结构 / 自检）——**官方 skill-creator 全部覆盖**。
-
-**用户明确分工**（2026-06-01）："**用官方的 skill-creator 专门负责编写 skill，园丁和达尔文是优化 skill**"。
-
-**与 skill-creator 的关系**：
+**§A 跟 skill-creator 的关系**（详见 `references/4-skill-toolkit-coordination-history-20260601.md` 历史决策）：
 - `skill-creator` = **主管道**（写 SKILL.md + evals + 评分）
 - `gardener-skill §A` = **园丁视角**（三条铁律 + 落位）——**不重复** skill-creator 的"如何写"
 - `gardener-skill §B` = **优化主流程**（**核心**——对话信号诊断 + 方案）
-- `darwin-skill` = **evals 量化优化**（**互补**）
+- `darwin-skill` = **evals 量化优化**（**互补**——通过 Phase 9.5 移交工作流联动，见下文）
 
-**Pitfall 教训**：**新发现 4-skill 工具包后，园丁 §A 跟 skill-creator 不应撞车**——**前者管"园丁视角"，后者管"如何写"**。
+> **本段（4-Skill 工具包定位，2026-06-01 决策）的全部内容已归档到 `references/4-skill-toolkit-coordination-history-20260601.md`**。当前主 SKILL.md 通过顶层路由表 + §D 路由决策树 + 「园丁 → 达尔文 交接协议」三处统一对外。
+
+---
+
+## 园丁 → 达尔文 交接协议（2026-06-03 新增）
+
+> **核心问题**：之前园丁出方案后**没有移交达尔文**的工作流，导致方案停留在"对话信号"层，无法用 evals 量化验证。**本协议**定义园丁和达尔文之间的**交接格式 + 触发条件 + 失败回退**。
+
+### 触发条件（什么时候移交）
+
+> **分级原则**：**改动可逆性 × 量化必要性**。可逆 = 单 commit 可回滚；不可逆 = 改 skill 定位/触发词/边界声明。量化必要性 = evals 能兜底 vs evals 跑不出来。
+
+| 园丁的判断 | 可逆性 | 移交达尔文？ | 理由 |
+|-----------|--------|------------|------|
+| 改 skill 定位 / 边界声明 / 触发词 | ❌ 不可逆 | ✅ **必须移交** | 影响范围大 + 不可逆，必须 evals 兜底 |
+| 改 frontmatter description | ⚠️ 半可逆 | ✅ **必须移交** | 触发词改动影响加载频率，需要 evals 验证 |
+| 加步骤 / 删步骤（流程缺失型） | ✅ 可逆 | ✅ **必须移交** | 流程改动需 evals 验证 |
+| 加 pitfall / 改示例（细节型） | ✅ 可逆 | ⚠️ **可选移交** | 细节改动量化收益小，看用户时间预算 |
+| Phase 1.5 判断是"方法不当"（换方向） | — | ❌ 不移交 | 方向问题由人决策，evals 跑不出方向对错 |
+| 用户明确说"不需要 evals 验证" | — | ❌ 不移交 | 尊重用户意图 |
+| skill 类型无法写 evals（创作类 / 对话类） | — | ⚠️ 可选移交 | 达尔文可能因无 evals 跑不了，需提前沟通；可选降级 dry_run |
+
+**判断流程**：
+
+```
+园丁出方案
+    ↓
+【Q1】用户是否明确拒绝 evals？ → ❌ 跳过达尔文
+    ↓ 否
+【Q2】改动的可逆性？
+    ↓ 不可逆（定位/边界/触发词）→ ✅ 必须移交
+    ↓ 半可逆（frontmatter）→ ✅ 必须移交
+    ↓ 可逆（流程/细节）
+        ↓
+        【Q3】改动的量化收益？
+        ↓ 大（流程改动）→ ✅ 必须移交
+        ↓ 小（细节）→ ⚠️ 可选移交（问用户时间预算）
+```
+
+### 园丁输出（移交前必须备齐）
+
+**位置**：项目画像库的 `优化建议.md` 末尾新增"达尔文交接包"小节。
+
+```
+【达尔文交接包】
+
+# 1. test-prompts.json
+#    3-5 个测试 prompt，覆盖本次优化改动的所有维度
+#    每个 prompt 含：id / prompt / expected_should_trigger / expected_reason
+
+# 2. 改动摘要（≤200 字）
+#    - 改了什么（具体段落/章节）
+#    - 为什么改（对应诊断的哪条）
+#    - 预期提升哪个维度（darwin 8 维 rubric 中的哪几条）
+
+# 3. 验证目标
+#    - 基线分数（如果有旧版本基线）
+#    - 目标分数（优化后预期达到）
+#    - 重点关注维度（哪 2-3 个维度变化最关键）
+
+# 4. 耗时预估（**新增 2026-06-03**）
+#    - 预估 evals 跑分耗时（分钟）：N 个 prompt × 估计单 prompt 耗时
+#    - 是否需要 subagent 嵌套：会（≥5 次嵌套会触发 600s 超时）/ 不会
+#    - 建议 eval_mode：full_test / dry_run
+#    - **降级触发条件**：超过预估 2 倍耗时 → 自动降级 dry_run
+#
+#    示例：
+#    {
+#      "estimated_minutes": 8,
+#      "needs_nested_subagent": false,
+#      "suggested_eval_mode": "full_test",
+#      "degrade_to_dry_run_after_minutes": 16
+#    }
+
+# 5. 路径前置检查（**新增 2026-06-03**）
+#    园丁在交接前**自己跑一遍**这些检查——避免达尔文接收时才发现路径错：
+#    [ ] 目标 skill 目录存在：`~/.hermes/skills/<skill>/` 或 profile 专用路径
+#    [ ] 目标 SKILL.md 可写（无只读 / 无冲突未提交）
+#    [ ] test-prompts.json 格式合规（参考 darwin-skill/test-prompts.json 模板）
+#    [ ] 8 维 rubric 适用（创作类 / 元组件类需提前标注）
+#    [ ] 上一次达尔文跑分记录存在（results.tsv）—— 没有则需要先跑基线
+```
+
+**为什么要加路径前置检查**：达尔文不是 hermes 子 agent，是个**独立可加载的 skill**。如果目标 skill 目录不存在 / SKILL.md 只读 / 之前没跑过达尔文，**园丁交接后达尔文第一步就失败**——浪费整个流程。园丁提前跑这些检查是**交接前的健康检查**。
+
+### 达尔文接收（拿到交接包后做什么）
+
+1. **加载 test-prompts.json** → 写到自己 skill 目录的 test-prompts.json
+2. **跑 8 维 rubric 基线**（如果交接包给了基线分数则跳过）
+3. **应用园丁的改动建议**（写入 SKILL.md）
+4. **跑 8 维 rubric 优化后** → 对比基线
+5. **棘轮决策**：
+   - 新分数 > 旧分数 → **keep**，git commit "darwin: 验证园丁方案 (commit hash)"
+   - 新分数 ≤ 旧分数 → **revert**，git revert，**回退通知园丁**重新设计
+
+### 失败回退（达尔文验证不通过怎么办）
+
+| 失败原因 | 园丁怎么办 |
+|---------|-----------|
+| 改动导致 evals 分数下降 | **回退**改动 → 园丁重新分析（回到 Phase 1） |
+| test-prompts 触发不到改动点 | **改 test-prompts** → 园丁补 prompt |
+| 8 维 rubric 不适用（创作类 skill） | **跳过达尔文** → 直接 Phase 6 人类判断 |
+| 达尔文跑分超时 / 子 agent 不可用 | **降级 dry_run** → 标注 `eval_mode: dry_run` → 不阻塞园丁流程 |
+
+### 联动示例（完整路径）
+
+```
+用户在用 picturebook-creator 时发现目标词分布不自然
+    ↓
+【园丁】
+Phase 1: 读对话，提取问题"目标词重复堆砌"
+Phase 1.5: 判断"流程缺失"（缺目标词分布检查步骤）→ 可逆 + 量化收益大 → 必移交
+Phase 2: 出方案——加"目标词自然分布检查"到第二阶段
+Phase 3-5: 测试场景设计 + 人在回路验证
+    ↓ 方案通过
+Phase 9.5: 移交达尔文
+    ├── 写 test-prompts.json（5 个 prompt，覆盖目标词分布场景）
+    ├── 改动摘要：picturebook-creator 第二阶段新增"目标词自然分布检查"步骤
+    ├── 验证目标：8 维 rubric 维度 8（实测表现）从 6 → 8
+    ├── 耗时预估：5 prompt × 估计 1.5 分钟/prompt = 7.5 分钟，eval_mode=full_test
+    └── 路径前置检查：~/.hermes/profiles/huiben/skills/creative/picturebook-creator/ 存在 ✓
+    ↓
+【达尔文】
+加载 test-prompts → 跑基线（6）→ 应用改动 → 跑优化后（8）→ keep
+    ↓
+【园丁】
+Phase 9: 更新画像库"验证记录.md"——达尔文确认有效（**顺序：9.5 → 9**）
+```
+
+### Pitfall: 园丁不能跳过达尔文直接给最终方案
+
+**触发条件**：园丁 Phase 5 测试通过后，直接进入 Phase 6 人类判断 + Phase 7 迭代 + Phase 8 提交，**没经过达尔文量化验证**。
+
+**错误后果**：
+- 方案停留在"对话信号"层，无法用 evals 兜底
+- 改动可能引入新 bug，但人眼难以识别（量化指标才能发现）
+- 4-skill 工具包联动机制空转
+
+**正确做法**：
+- **方案通过 Phase 5 后必须走 Phase 9.5 移交达尔文**
+- **达尔文 keep 才能进 Phase 6 人类最终判断**
+- **达尔文 revert 必须回到 Phase 1 重新分析**
 
 ---
 
 ## 与达尔文的关系
 
-园丁是达尔文的**互补工具**，不是替代品。两者优化角度完全不同。
+园丁和达尔文是 **4-skill 工具包的联动关系**，不是简单的"互补"——**园丁出方案，达尔文做量化验证**。完整联动协议见上文"园丁 → 达尔文 交接协议"段。
 
-| 输入信号 | 使用工具 |
-|---|---|
-| evals 量化评分（多 prompt 对比、子 agent 跑分） | 达尔文（分数棘轮） |
-| 真实对话暴露问题（用户纠正、效果不对、反复调整） | 园丁（对话诊断 + 方案） |
+### 决策矩阵（一图看懂）
 
-**决策树**：
+| skill 哪里出问题 | 工具 | 原因 |
+|----------------|------|------|
+| evals 分数下降 / 多 prompt 对比 | **达尔文**（量化评分 + 棘轮） | 有量化数据，按分数走 |
+| 真实对话暴露问题（用户反馈、效果不对） | **园丁**（读对话 + 给方案） | 没有量化数据，靠人观察 |
+| 园丁方案需要量化验证 | **达尔文**（接 Phase 9.5 移交） | 4-skill 工具包联动 |
+| 整体 skill 库整理 / 审计 / 归档 | **skill-organizer** | 全 skill 集合视角 |
+| 写新 skill / 改 frontmatter | **skill-creator**（主管道） | 编写视角 |
 
-```
-这个 skill 哪里出问题？
-    ↓
-evals 分数下降 / 多 prompt 对比
-    ↓ 是 → 达尔文（量化评分 + 棘轮）
-    ↓ 否 → 继续
-        ↓
-真实对话里发现的问题（用户反馈、对话卡住、效果不对）
-    ↓ 是 → 园丁（读对话 + 给方案）
-    ↓ 否 → 不需要优化
-```
+### 本质差异
 
-**本质差异**：
 - **达尔文** = 「**多 prompt 跑分对比**」—— 适合能写 evals 的 skill（操作流程型、有明确测试点）
 - **园丁** = 「**单次对话深度分析**」—— 适合不能用 evals 量化的 skill（创作类、对话类、需要「人在回路」的 skill）
 
-**互补用例**：
-- Anna（对话驱动型） → 园丁主，达尔文辅（如果写得出 evals 的话）
+### 互补用例（2026-06-03 更新）
+
+- Anna（对话驱动型） → 园丁主，达尔文辅（如果能写 evals）
 - hermes-gateway-result-routing（操作流程型） → 达尔文主，园丁不介入
-- skill-creator 本身的优化 → 达尔文（evals 已成熟）
+- skill-creator 本身的优化 → skill-creator 自带 evals + darwin 量化（不归园丁）
+- **任何 skill 的优化** → 园丁出方案 → 达尔文验证（**新机制，2026-06-03**）
 
 ---
 
@@ -1052,6 +1165,47 @@ fi
 
 **关联**：完整 git 同步 + 安装流程 + push 网络 workaround 见 `hermes-multi-agent/references/skill-installation-procedure.md`。
 
+### Pitfall: patch 工具偶发"删除未指定段落"——SKILL.md 长文件必跑 diff 范围检查
+
+**触发条件**：用 `patch` 工具修改**长** SKILL.md（>1000 行）时，**old_string 只匹配标题但实际删除范围超出预期**。
+
+**错误后果**（2026-06-03 picturebook-video v10 升级实测）：
+- 操作：给 v3 范式正文加"❌ 已弃用"标记（4 行改动）
+- 实际 diff：`+4 / -42`（删了 42 行 = v9 出现的工作方法论教训 + 单测门 SOP 段）
+- 这些**不属于 patch 范围**——但被 patch 工具静默删了
+- 恢复：`git checkout HEAD -- SKILL.md` → 重新 patch（更小心 + 更小 old_string）→ 验证 `+11/-5` 合理
+- 教训写入 commit message（`bea1645`）
+
+**根因推测**：patch 工具对 unicode 行号定位 + 上下文匹配有边界 case——长文件中**同标题多次出现**或**old_string 模糊匹配**可能误删。
+
+**正确做法**（**所有 SKILL.md 修改后必跑 3 步验证**）：
+
+```bash
+# 1. diff 范围合理性
+git diff --stat
+# 预期：改动量 ≤ 预期 × 1.5
+# 超出 = 立即 git checkout HEAD -- <file> + 重新做
+
+# 2. 关键内容还在
+grep -c "<关键段标题1>\|<关键段标题2>" SKILL.md
+# 验证：count 应该跟修改前一致
+
+# 3. patch 范围可控
+# 永远用**最小** old_string（单行标题 + 1 行上下文）而非大段
+```
+
+**判断标准**：
+- diff 改动量 **≤ 预期** → 安全
+- 改动量 **= 预期 × 2-5** → 立即 `git diff` 细看是不是误删
+- 改动量 **> 预期 × 5** → 立即 `git checkout HEAD -- <file>` + 重新做
+
+**预防**：
+- patch 时 `old_string` **尽量只含 1 行**（标题行）+ 必要的最小上下文
+- 长 SKILL.md (>1500 行) 优先**用 write_file 全量重写**而非 patch
+- patch 工具 + 写完 grep 关键内容**必跑**——不要信任 patch 工具的"我只改了 X 行"
+
+**检测方法**：当 `git diff --stat` 改动量跟"你写了几行"对不上时，**怀疑误删**。
+
 ### Pitfall: skill 库管理（整理/审计/归档）不归园丁管——归 skill-organizer
 
 **触发条件**：用户说"skill 太多"、"哪些该删"、"整理 skill 库"——**园丁想接管**。
@@ -1068,3 +1222,70 @@ fi
 
 **检测方法**：用户提到"全局"或"多个 skill"时，**先考虑 skill-organizer**，不要默认"我管"。
 
+---
+
+## §F 跨次诊断策略记忆 (gardener_memory.md)
+
+> **位置**: `gardener-skill/gardener_memory.md` (本仓库, 模板态)
+> **借鉴**: microsoft/SkillOpt 的 `meta_skill.md` —— 跨 epoch 滚动的简短结构化战略笔记
+> **目的**: 优化 A skill 时的经验, 自动迁移到 B skill 的诊断中
+
+### F.1 为什么要加
+
+当前园丁是**单次深度分析** (Phase 1-6 一次性出方案)——优化 skill X 总结的教训, 不会自动带到 skill Y 的诊断。每次从零开始。
+
+gardener_memory.md 补这一层:
+- ✅ 跨次诊断的"已知教训" 复用
+- ✅ 园丁系列唯一缺的"元层机制" (其他 3 个 skill 都有持续状态: skill-creator 写完后即沉淀, darwin 跑 evals 有历史, organizer 跑库扫描有清单)
+- ✅ 对齐 SkillOpt 的 meta_skill 设计
+
+### F.2 写入规则
+
+- **时机**: 每次 Phase 5.5 成品扫描完成 + Phase 6 人类判断通过后
+- **量**: 1-3 条/次, 每条 1 行, 动词开头
+- **内容**: 沉淀**通用规律** (移到别的 skill 也成立), 不是**具体案例**
+- **容量**: 上限 10 条, 滚动淘汰最早的
+
+完整格式 / 反例 / 隐私红线见 `gardener_memory.md` 文件头部。
+
+### F.3 读取规则
+
+- **时机**: 每次 Phase 1 对话分析开始前
+- **量**: 读头部 5 条
+- **用法**: 叠加进对话分析上下文, 作为"已知教训"
+- **不**全部读 (避免淹没对话信号本身)
+
+### F.4 跟 SKILL.md 的关系
+
+- gardener_memory.md **不进** SKILL.md
+- 它是园丁的**元层配置文件**, 跟 skill 文档解耦
+- 跨 profile 隔离: huiben / default profile 各自维护
+
+### F.5 跟其他 skill 的关系
+
+| 工具 | 持续状态 | 类比 SkillOpt |
+|------|---------|---------------|
+| skill-creator | 写完的 SKILL.md 即沉淀 | best_skill.md |
+| darwin-skill | evals 历史 + git 棘轮 | results.tsv |
+| skill-organizer | 库清单 + 分类 | 库扫描日志 |
+| **gardener-skill** | **gardener_memory.md** | **meta_skill.md** ← **本节补的就是这个** |
+
+---
+
+## ⚠️ Pitfall — 评分作弊 (2026-06-05 新增, 来自 gbrain-evals Result 2)
+
+园丁的"对话信号诊断"看起来主观, **但仍然是独立 judge** (合规)——因为 LLM 评分跟对话信号本身**不同源**。
+
+但**任何**未来要给园丁加的"硬指标"扩展 (如 description 长度、章节数、关键词命中):
+- **必须**配 held-out 测试集
+- **必须**配真实质量 judge (不能跟主信号同源)
+- 任何下降 → 拒绝该建议
+
+**反例** (gbrain-evals 验证): 只检查 section header 存在的 scorer, 把空 header 算通过, 分数 1.00 但实际质量 0.28。
+
+**正面做法**:
+- 园丁主路径对话信号 = 独立 judge ✅
+- 未来硬指标扩展 (若有) = 配 held-out + 独立 judge
+- 二者**双轨** = 跟 darwin 集成 SkillOpt 时的反作弊机制**同源**
+
+**来源**: gbrain-evals 2026-06-03-skillopt.md Result 2
