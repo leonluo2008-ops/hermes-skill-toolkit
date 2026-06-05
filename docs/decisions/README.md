@@ -13,6 +13,8 @@
 | [0002](./0002-skillopt-integration-mode.md) | SkillOpt 集成 = opt-in + 双轨制 + 失败降级 | ✅ Accepted | 2026-06-05 | darwin 引擎, 中期 |
 | [0003](./0003-gardener-memory-as-meta-layer.md) | gardener_memory.md = 园丁元层 (借鉴 SkillOpt meta_skill) | ✅ Accepted | 2026-06-05 | 园丁架构, 长期 |
 | [0004](./0004-anti-cheat-double-track.md) | 防评分作弊 = held-out + 独立 judge + 双轨制 | ✅ Accepted | 2026-06-05 | 4-skill 全员, 长期 |
+| [0005](./0005-skillopt-minimaxi-cn-bridge.md) | SkillOpt minimaxi-cn 集成 = bridge wrapper (不改 SkillOpt 源码) | ✅ Accepted | 2026-06-05 | SkillOpt 集成, 长期 |
+| [0006](./0006-skillopt-wheel-missing-prompts.md) | SkillOpt 0.1.0 wheel 漏打包 21 个 prompt 文件 (临时修法手动补) | ✅ Accepted | 2026-06-05 | SkillOpt 集成, 中期 |
 
 ## 状态说明
 

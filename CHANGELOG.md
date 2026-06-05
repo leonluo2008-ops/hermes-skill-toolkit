@@ -2,6 +2,54 @@
 
 All notable changes to this monorepo will be documented here.
 
+## [0.3.0] - 2026-06-05
+
+### Dogfood 阶段产物入仓 (PR #2)
+
+承接 v0.2.0 PR #1 的 SkillOpt 集成机制, dogfood 验证发现 3 个真实世界问题, 全部入仓。
+
+### Features
+
+- **`docs/research/2026-06-05-skillopt-dogfood-gardener.md`** — 完整 dogfood 报告 (searchqa dry run 端到端 + 3 个发现)
+- **`tools/skillopt_minimaxi_bridge.py`** — minimaxi-cn bridge wrapper (monkey-patch SkillOpt 内部 API, 不改 SkillOpt 源码)
+- **协调文档 `docs/skill-toolkit-coordination.md`** — 加 SkillOpt 集成使用指南 + research 目录引用
+
+### Architecture Decisions
+
+- **ADR 0005** — SkillOpt minimaxi-cn 集成发现 (endpoint 错 `api.minimax.io` 死了 + 协议错 OpenAI→Anthropic, 修法: bridge wrapper monkey-patch)
+- **ADR 0006** — SkillOpt 0.1.0 wheel 漏打包 21 个 prompt 文件 (临时修法: 手动从 GitHub 补, 每次升级/重装都要重做)
+
+### Not Done (下下个 PR)
+
+- **PR #3** — 真训 gardener-skill (60 items + 4 epochs, 预计 2-6 h, $20-80)
+- **PR #3.1** — 写 `tools/install_skillopt.sh` (pip install + 补 prompt 一行化)
+- **PR #3.2** — 在 wrapper 加 prompt 存在性预检 (防 silent 失败)
+- **报 issue 给 microsoft/SkillOpt** — wheel 漏打包 + endpoint 死了 (zh-CN 描述)
+
+### Migration Notes
+
+从 v0.2.0 升级:
+
+```bash
+# 1. 拉新分支 / 切到本 PR 合并后的 dev
+cd ~/.hermes/monorepo/hermes-skill-toolkit
+git pull
+
+# 2. 重装 (新加的 tools/ 目录需要 symlink, 如果需要)
+# 注意: tools/ 是 monorepo 内部工具, 不需要装到 ~/.hermes/skills/
+# 跑训练时直接 import 即可
+
+# 3. 验证
+ls -la tools/skillopt_minimaxi_bridge.py
+ls -la docs/research/2026-06-05-skillopt-dogfood-gardener.md
+ls -la docs/decisions/000{5,6}-*.md
+```
+
+### Compatibility
+
+- **完全兼容 v0.2.0** — 只新增 (4 文件), 改 3 文档, 4 个 skill 无变动
+- **不影响 install.sh** — tools/ 不在 symlink 范围 (只装 skill)
+
 ## [0.2.0] - 2026-06-05
 
 ### SkillOpt 集成 + 园丁元层 + 防作弊铁律

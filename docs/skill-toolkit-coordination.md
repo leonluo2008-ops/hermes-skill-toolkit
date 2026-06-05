@@ -214,6 +214,8 @@ Phase 2: Writing Plans     ─→      Write SKILL.md
 - **ADR 0002** — SkillOpt 集成 = opt-in + 双轨制 + 失败降级
 - **ADR 0003** — gardener_memory.md = 园丁元层 (借鉴 SkillOpt meta_skill)
 - **ADR 0004** — 防评分作弊 = held-out + 独立 judge + 双轨制
+- **ADR 0005** — SkillOpt minimaxi-cn 集成 = bridge wrapper (不改 SkillOpt 源码)
+- **ADR 0006** — SkillOpt 0.1.0 wheel 漏打包 21 个 prompt 文件 (临时修法手动补)
 
 **何时看 ADRs**:
 - 新增 skill 之前 (看 ADR 0001 决策是否影响)
@@ -221,6 +223,50 @@ Phase 2: Writing Plans     ─→      Write SKILL.md
 - 园丁架构调整 (看 ADR 0003)
 
 **添加新 ADR**: 写 `NNNN-<kebab-case>.md`, 改 `decisions/README.md` 加索引, 状态 `Proposed` → 评审 → `Accepted`。
+
+## 研究档案 (research/)
+
+`docs/research/` 存**已完成**的研究 / dogfood 报告 / 评估报告。**决策**走 `decisions/`, **调研**走 `research/`。
+
+当前:
+
+- **[2026-06-05-skillopt-dogfood-gardener.md](./research/2026-06-05-skillopt-dogfood-gardener.md)** — SkillOpt minimaxi-cn 集成 dogfood 报告 (PR #2)
+  - 验证 PR #1 §E SkillOpt 集成机制 (searchqa dry run 端到端)
+  - 发现 3 个真实世界问题 (见 ADR 0005/0006)
+
+**何时看 research/**:
+- 评估第三方 skill / 工具时 (看过去怎么 dogfood)
+- 写新 skill / 工具前 (看有什么坑被踩过)
+- 给 monorepo 升级时 (看什么工具有 breaking change)
+
+**添加新 research 报告**: 写 `YYYY-MM-DD-<topic>.md`, 按时间倒序归档。
+
+## SkillOpt 集成使用 (PR #1 + #2)
+
+4-skill 工具包用户用 SkillOpt 训 skill 时:
+
+```bash
+# 1. 装 SkillOpt (一次性)
+pip install skillopt
+
+# 2. 补漏打包的 prompt (wheel bug, 每次升级都要重做)
+cd ~/.hermes/hermes-agent/venv/lib/python3.11/site-packages/skillopt/prompts
+for f in analyst_error*.md analyst_success*.md merge_*.md meta_skill.md \
+         ranking*.md rewrite_skill.md slow_update.md lr_autonomous.md; do
+  curl -sL "https://raw.githubusercontent.com/microsoft/SkillOpt/main/skillopt/prompts/$f" -o "$f"
+done
+
+# 3. 跑 SkillOpt 训练 (调 minimaxi-cn)
+export MINIMAX_CN_API_KEY="<your-key>"
+python -c "
+from tools.skillopt_minimaxi_bridge import patch_skillopt_minimax_backend
+patch_skillopt_minimax_backend()
+# 然后正常 SkillOpt 用法
+"
+```
+
+**为什么需要 wrapper**: 见 ADR 0005。
+**为什么需要手动补 prompt**: 见 ADR 0006。
 
 
 ## 历史
