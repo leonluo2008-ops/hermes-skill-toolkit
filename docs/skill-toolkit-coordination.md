@@ -206,6 +206,23 @@ Phase 2: Writing Plans     ─→      Write SKILL.md
    - **正面做法**: darwin-skill 的 8 维评分 = 独立 judge; darwin §E SkillOpt 集成 = 客观分数 = 硬指标; 二者**双轨** = 当前 4-skill 工具包已合规
    - **来源**: gbrain-evals 2026-06-03-skillopt.md Result 2 (本地存档路径: ~/.hermes/favorites-index/external/)
 
+## 架构决策记录 (ADRs)
+
+4-skill 工具包重大架构决策独立记录在 [`docs/decisions/`](./decisions/README.md), 当前 4 份:
+
+- **ADR 0001** — 不 fork 第三方 skill (SkillOpt / OpenSquilla)
+- **ADR 0002** — SkillOpt 集成 = opt-in + 双轨制 + 失败降级
+- **ADR 0003** — gardener_memory.md = 园丁元层 (借鉴 SkillOpt meta_skill)
+- **ADR 0004** — 防评分作弊 = held-out + 独立 judge + 双轨制
+
+**何时看 ADRs**:
+- 新增 skill 之前 (看 ADR 0001 决策是否影响)
+- 评估流程升级 (看 ADR 0002 / 0004)
+- 园丁架构调整 (看 ADR 0003)
+
+**添加新 ADR**: 写 `NNNN-<kebab-case>.md`, 改 `decisions/README.md` 加索引, 状态 `Proposed` → 评审 → `Accepted`。
+
+
 ## 历史
 
 - 2026-06-02：superpowers 融合（Q1=A 轻嵌）—— superpowers 负责 Phase 1-2（脑暴+计划），skill-creator 接管 Phase 3+
