@@ -2,6 +2,70 @@
 
 All notable changes to this monorepo will be documented here.
 
+## [0.2.0] - 2026-06-05
+
+### SkillOpt 集成 + 园丁元层 + 防作弊铁律
+
+基于 `microsoft/SkillOpt` 调研 (`v0.1.0` PyPI), 给 4-skill 工具包加 3 件事 (建议 1+2+4):
+
+### Features
+
+- **darwin-skill 接入 SkillOpt 引擎 (opt-in)**:
+  - `metadata.hermes.engines: [llm-rubric, skillopt]` —— 默认仍是 8 维 LLM rubric
+  - 新增 §E "SkillOpt 引擎" 章节: 触发条件 / 6 benchmark 速查 / 最小调用样例 / 失败回退
+  - 新增 `references/prompts/skillopt-bridge.md` —— darwin → SkillOpt 桥接 prompt
+  - 关键约束: `slow_update_gate_with_selection: true` (保守, 跟 paper/ckpt 一致)
+  - **双轨制铁律**: best_skill.md 必须同时满足 (1) SkillOpt validation 提升 (2) 8 维评分不下降, 任一不满足 → 拒绝
+
+- **gardener-skill 补 Slow Update 机制**:
+  - 新增 `gardener_memory.md` —— 跨次诊断策略记忆 (模板态)
+  - 借鉴 SkillOpt `meta_skill.md` 形式: 简短 / 结构化 / 滚动 10 条
+  - SKILL.md 新增 §F "跨次诊断策略记忆" —— 写入规则 / 读取规则 / 跟其他 skill 的关系
+  - 沉淀标准: 通用规律 vs 具体案例 (反"绑定具体内容"铁律)
+  - 隐私红线: 不写用户原话, 只写"对话中暴露的**模式**"
+
+- **防评分作弊铁律 (来自 gbrain-evals Result 2)**:
+  - 协调文档 `skill-toolkit-coordination.md` 注意事项 §7
+  - darwin-skill + gardener-skill SKILL.md 末尾都加 ⚠️ Pitfall 条目
+  - 铁律 3 条: held-out 测试集 / 独立 judge / 双轨制
+
+### Architecture Decisions
+
+- **不 fork SkillOpt**: 4-skill 工具包定位不变, 只 `pip install skillopt` 调用
+- **不复制训练循环**: SkillOpt 是 Python 库 / DL 范式, hermes 是 SKILL.md / LLM 范式, **集成 ≠ fork**
+- **gardener_memory.md 不进 SKILL.md**: 元层配置文件, 跟 skill 文档解耦
+- **跨 profile 隔离**: huiben / default profile 各自维护自己的 gardener_memory.md
+
+### Pitfalls Added
+
+- darwin-skill §末尾: 评分作弊 (硬指标必须配 held-out + 独立 judge)
+- gardener-skill §末尾: 同上 (园丁主路径已合规, 未来硬指标扩展需双轨)
+- darwin-skill §E.5: SkillOpt 失败自动降级 8 维 rubric
+
+### Migration Notes
+
+从 v0.1.0 升级:
+
+```bash
+# 1. 拉新分支 / 切到本 PR 合并后的 dev
+cd ~/.hermes/monorepo/hermes-skill-toolkit
+git pull
+
+# 2. 重装 (新加的文件需要 symlink)
+bash scripts/install.sh
+
+# 3. 验证 (新增文件)
+ls -la ~/.hermes/skills/darwin-skill/references/prompts/skillopt-bridge.md
+ls -la ~/.hermes/skills/gardener-skill/gardener_memory.md
+
+# 4. 跑 skill-creator evals (3 改的 skill 各跑 1 次, 确认默认路径无回归)
+```
+
+### Not Done (下个 PR)
+
+- **建议 3 dogfood 演示**: 拿 gardener-skill 真跑 SkillOpt 训一遍, 出 best_skill.md 对比
+- 决策记录「不 fork 第三方 skill」: 进协调文档
+
 ## [0.1.0] - 2026-06-01
 
 ### Initial Release

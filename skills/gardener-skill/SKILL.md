@@ -1222,3 +1222,70 @@ grep -c "<关键段标题1>\|<关键段标题2>" SKILL.md
 
 **检测方法**：用户提到"全局"或"多个 skill"时，**先考虑 skill-organizer**，不要默认"我管"。
 
+---
+
+## §F 跨次诊断策略记忆 (gardener_memory.md)
+
+> **位置**: `gardener-skill/gardener_memory.md` (本仓库, 模板态)
+> **借鉴**: microsoft/SkillOpt 的 `meta_skill.md` —— 跨 epoch 滚动的简短结构化战略笔记
+> **目的**: 优化 A skill 时的经验, 自动迁移到 B skill 的诊断中
+
+### F.1 为什么要加
+
+当前园丁是**单次深度分析** (Phase 1-6 一次性出方案)——优化 skill X 总结的教训, 不会自动带到 skill Y 的诊断。每次从零开始。
+
+gardener_memory.md 补这一层:
+- ✅ 跨次诊断的"已知教训" 复用
+- ✅ 园丁系列唯一缺的"元层机制" (其他 3 个 skill 都有持续状态: skill-creator 写完后即沉淀, darwin 跑 evals 有历史, organizer 跑库扫描有清单)
+- ✅ 对齐 SkillOpt 的 meta_skill 设计
+
+### F.2 写入规则
+
+- **时机**: 每次 Phase 5.5 成品扫描完成 + Phase 6 人类判断通过后
+- **量**: 1-3 条/次, 每条 1 行, 动词开头
+- **内容**: 沉淀**通用规律** (移到别的 skill 也成立), 不是**具体案例**
+- **容量**: 上限 10 条, 滚动淘汰最早的
+
+完整格式 / 反例 / 隐私红线见 `gardener_memory.md` 文件头部。
+
+### F.3 读取规则
+
+- **时机**: 每次 Phase 1 对话分析开始前
+- **量**: 读头部 5 条
+- **用法**: 叠加进对话分析上下文, 作为"已知教训"
+- **不**全部读 (避免淹没对话信号本身)
+
+### F.4 跟 SKILL.md 的关系
+
+- gardener_memory.md **不进** SKILL.md
+- 它是园丁的**元层配置文件**, 跟 skill 文档解耦
+- 跨 profile 隔离: huiben / default profile 各自维护
+
+### F.5 跟其他 skill 的关系
+
+| 工具 | 持续状态 | 类比 SkillOpt |
+|------|---------|---------------|
+| skill-creator | 写完的 SKILL.md 即沉淀 | best_skill.md |
+| darwin-skill | evals 历史 + git 棘轮 | results.tsv |
+| skill-organizer | 库清单 + 分类 | 库扫描日志 |
+| **gardener-skill** | **gardener_memory.md** | **meta_skill.md** ← **本节补的就是这个** |
+
+---
+
+## ⚠️ Pitfall — 评分作弊 (2026-06-05 新增, 来自 gbrain-evals Result 2)
+
+园丁的"对话信号诊断"看起来主观, **但仍然是独立 judge** (合规)——因为 LLM 评分跟对话信号本身**不同源**。
+
+但**任何**未来要给园丁加的"硬指标"扩展 (如 description 长度、章节数、关键词命中):
+- **必须**配 held-out 测试集
+- **必须**配真实质量 judge (不能跟主信号同源)
+- 任何下降 → 拒绝该建议
+
+**反例** (gbrain-evals 验证): 只检查 section header 存在的 scorer, 把空 header 算通过, 分数 1.00 但实际质量 0.28。
+
+**正面做法**:
+- 园丁主路径对话信号 = 独立 judge ✅
+- 未来硬指标扩展 (若有) = 配 held-out + 独立 judge
+- 二者**双轨** = 跟 darwin 集成 SkillOpt 时的反作弊机制**同源**
+
+**来源**: gbrain-evals 2026-06-03-skillopt.md Result 2
