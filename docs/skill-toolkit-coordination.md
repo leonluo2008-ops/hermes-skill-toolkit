@@ -198,6 +198,76 @@ Phase 2: Writing Plans     ─→      Write SKILL.md
 4. **互相引用**：每个 skill 的 `related_skills` 都包含另外 3 个
 5. **协作而非替代**：skill-creator 也"improve existing skills"，但**默认**走 gardener（对话） / darwin（evals）
 6. **分工核心（2026-06-02）**：按**输入信号类型**分（对话 vs evals），不按 skill 类型分（思维 vs 流程）
+7. **防评分作弊铁律（2026-06-05 新增）**：任何会**自动改 SKILL.md** 的工具 (darwin / gardener / skillopt 集成), **必须**同时满足:
+   - ① 持有 held-out 测试集 (训练数据**永远看不到**)
+   - ② 配独立 judge (不能跟主评分器同源)
+   - ③ 硬指标 + 主观评分的"双轨"——**任一下降**都拒
+   - **反例** (gbrain-evals 验证): 只检查 section header 存在的 scorer, 会把空 header 算通过, 分数 1.00 但实际质量 0.28
+   - **正面做法**: darwin-skill 的 8 维评分 = 独立 judge; darwin §E SkillOpt 集成 = 客观分数 = 硬指标; 二者**双轨** = 当前 4-skill 工具包已合规
+   - **来源**: gbrain-evals 2026-06-03-skillopt.md Result 2 (本地存档路径: ~/.hermes/favorites-index/external/)
+
+## 架构决策记录 (ADRs)
+
+4-skill 工具包重大架构决策独立记录在 [`docs/decisions/`](./decisions/README.md), 当前 4 份:
+
+- **ADR 0001** — 不 fork 第三方 skill (SkillOpt / OpenSquilla)
+- **ADR 0002** — SkillOpt 集成 = opt-in + 双轨制 + 失败降级
+- **ADR 0003** — gardener_memory.md = 园丁元层 (借鉴 SkillOpt meta_skill)
+- **ADR 0004** — 防评分作弊 = held-out + 独立 judge + 双轨制
+- **ADR 0005** — SkillOpt minimaxi-cn 集成 = bridge wrapper (不改 SkillOpt 源码)
+- **ADR 0006** — SkillOpt 0.1.0 wheel 漏打包 21 个 prompt 文件 (临时修法手动补)
+
+**何时看 ADRs**:
+- 新增 skill 之前 (看 ADR 0001 决策是否影响)
+- 评估流程升级 (看 ADR 0002 / 0004)
+- 园丁架构调整 (看 ADR 0003)
+
+**添加新 ADR**: 写 `NNNN-<kebab-case>.md`, 改 `decisions/README.md` 加索引, 状态 `Proposed` → 评审 → `Accepted`。
+
+## 研究档案 (research/)
+
+`docs/research/` 存**已完成**的研究 / dogfood 报告 / 评估报告。**决策**走 `decisions/`, **调研**走 `research/`。
+
+当前:
+
+- **[2026-06-05-skillopt-dogfood-gardener.md](./research/2026-06-05-skillopt-dogfood-gardener.md)** — SkillOpt minimaxi-cn 集成 dogfood 报告 (PR #2)
+  - 验证 PR #1 §E SkillOpt 集成机制 (searchqa dry run 端到端)
+  - 发现 3 个真实世界问题 (见 ADR 0005/0006)
+
+**何时看 research/**:
+- 评估第三方 skill / 工具时 (看过去怎么 dogfood)
+- 写新 skill / 工具前 (看有什么坑被踩过)
+- 给 monorepo 升级时 (看什么工具有 breaking change)
+
+**添加新 research 报告**: 写 `YYYY-MM-DD-<topic>.md`, 按时间倒序归档。
+
+## SkillOpt 集成使用 (PR #1 + #2)
+
+4-skill 工具包用户用 SkillOpt 训 skill 时:
+
+```bash
+# 1. 装 SkillOpt (一次性)
+pip install skillopt
+
+# 2. 补漏打包的 prompt (wheel bug, 每次升级都要重做)
+cd ~/.hermes/hermes-agent/venv/lib/python3.11/site-packages/skillopt/prompts
+for f in analyst_error*.md analyst_success*.md merge_*.md meta_skill.md \
+         ranking*.md rewrite_skill.md slow_update.md lr_autonomous.md; do
+  curl -sL "https://raw.githubusercontent.com/microsoft/SkillOpt/main/skillopt/prompts/$f" -o "$f"
+done
+
+# 3. 跑 SkillOpt 训练 (调 minimaxi-cn)
+export MINIMAX_CN_API_KEY="<your-key>"
+python -c "
+from tools.skillopt_minimaxi_bridge import patch_skillopt_minimax_backend
+patch_skillopt_minimax_backend()
+# 然后正常 SkillOpt 用法
+"
+```
+
+**为什么需要 wrapper**: 见 ADR 0005。
+**为什么需要手动补 prompt**: 见 ADR 0006。
+
 
 ## 历史
 

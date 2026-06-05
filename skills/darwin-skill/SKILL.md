@@ -4,10 +4,18 @@ description: "Darwin Skill (达尔文.skill): autonomous skill optimizer inspire
 license: Apache-2.0
 metadata:
   hermes:
-    tags: [skills, optimization, darwin, hill-climbing, autoresearch, rubric]
+    tags: [skills, optimization, darwin, hill-climbing, autoresearch, rubric, skillopt]
     related_skills: [skill-creator, gardener-skill, skill-organizer]
     toolkit_role: flow-optimizer
-    notes: 4-skill 工具包之一（流程类优化——棘轮 + 8维评分），与 skill-creator（编写）/gardener（思维优化）/organizer（整理）协作
+    engines: [llm-rubric, skillopt]
+    engine_skillopt:
+      mode: opt-in                    # opt-in | opt-out | off
+      benchmark: searchqa              # searchqa | alfworld | docvqa | livemathematicianbench | spreadsheetbench | officeqa
+      epochs: 4
+      batch_size: 40
+      cost_warning: high              # SkillOpt 跑训练动辄几小时/几十刀
+      slow_update_gate_with_selection: true   # 跟 paper/ckpt 一致（保守）
+    notes: 4-skill 工具包之一（流程类优化——棘轮 + 8维评分），与 skill-creator（编写）/gardener（思维优化）/organizer（整理）协作。可选 SkillOpt 引擎做客观 benchmark 验证（opt-in，不默认开）
 ---
 
 # Darwin Skill
@@ -494,3 +502,107 @@ timestamp	commit	skill	old_score	new_score	status	dimension	note	eval_mode
 
 - 顶部：Darwin.skill 品牌标识 + 日期
 - 底部：「Train your Skills like you train your models」+ github.com/alchaincyf/darwin-skill
+
+---
+
+## §E SkillOpt 引擎 (可选, opt-in)
+
+> **核心原则**: 8 维 LLM rubric 评分是 darwin 的**默认**和**主路径**。SkillOpt 是**可选增强**——用于「需要客观分数做背书」的场景 (如重要 skill 正式发版前、双盲评审、给老板/客户演示)。
+>
+> **绝不默认开**。SkillOpt 跑一次训练通常几小时 + 几十刀成本。
+
+### E.1 触发条件
+
+**满足以下任一条件才考虑启用 SkillOpt**:
+
+1. **重要 skill 发版前** —— 比如 v0.x → v1.0 的关键 skill
+2. **8 维评分卡在边缘** —— 总分 70-85 区间,LLM 评分"还行但说不出哪里差"
+3. **多 skill 对比** —— 需要客观分数横评 2+ 个候选版本
+4. **高 stakes 场景** —— 用户主动要求"用 benchmark 验证" / "出 best_skill.md"
+
+**不满足** → 走 8 维 LLM rubric 路径,不要为了用而用。
+
+### E.2 6 个内置 Benchmark 速查
+
+| Benchmark | 类型 | 典型用时 | 适合验证什么 |
+|-----------|------|---------|------------|
+| `searchqa` | QA | 中 | 信息抽取 / 检索式问答 skill |
+| `alfworld` | 具身 agent | 长 | 多步规划 / 工具调用 skill |
+| `docvqa` | 文档 QA | 中 | 文档理解 / OCR 校对 skill |
+| `livemathematicianbench` | 数学 | 中 | 推理 / 计算 skill |
+| `spreadsheetbench` | 代码生成 | 中 | 数据处理 / 表格生成 skill |
+| `officeqa` | 工具增强 QA | 中 | 工具编排 / API 调用 skill |
+
+**没有合适的 benchmark** → 跳过 SkillOpt,8 维评分够用。
+
+### E.3 最小调用样例
+
+```bash
+# 1. 安装 (一次性)
+pip install skillopt
+
+# 2. 准备数据 split
+#   data/<your-skill>_split/{train,val,test}/items.json
+#   格式见: https://github.com/microsoft/SkillOpt#data-preparation
+
+# 3. 训练
+python -m skillopt train \
+  --config configs/searchqa/default.yaml \
+  --split_dir /path/to/your/split \
+  --optimizer_backend anthropic \
+  --target_backend anthropic \
+  --optimizer_model claude-sonnet-4-6 \
+  --target_model claude-sonnet-4-6 \
+  --out_root outputs/darwin-skillopt-$(date +%Y%m%d)
+
+# 4. 拿 best_skill.md
+ls outputs/darwin-skillopt-*/best_skill.md
+```
+
+### E.4 与 8 维评分的双轨制
+
+**铁律**: 任何 SkillOpt 产出的 `best_skill.md` **必须**同时满足:
+
+```
+✅ SkillOpt validation 分数 > 原始 SKILL.md
+✅ darwin 8 维 LLM 评分 不下降 (允许 ±1 浮动)
+```
+
+**任一不满足 → 拒绝 best_skill.md,继续用原版**。
+
+这条双轨制 = 协调文档 `skill-toolkit-coordination.md` §注意事项第 6 条「防评分作弊铁律」的具体落地。
+
+### E.5 失败回退
+
+```
+SkillOpt 启动失败 / 网络问题 / benchmark 无合适数据
+  ↓
+自动降级到 8 维 LLM rubric 路径
+  ↓
+在 results.tsv 记 status=fallback,reason=<具体错误>
+```
+
+**绝不**让 SkillOpt 故障阻塞 darwin 主流程。
+
+### E.6 与上游 darwin-skill 关系
+
+- 上游 `alchaincyf/darwin-skill` 2026-06-03 已整合 SkillOpt —— 我们的整合思路跟上游一致
+- **不 fork** 上游; 本仓库保留自家 4-skill 工具包定位,只**调用** `pip install skillopt` 包
+- 上游有更新 → 跟 monorepo update 流程走 (git pull + diff)
+
+---
+
+## ⚠️ Pitfall — 评分作弊 (2026-06-05 新增, 来自 gbrain-evals Result 2)
+
+darwin 8 维 LLM rubric 评分 = **独立 judge** (合规)。
+
+但**任何**用硬指标 (description 长度 / 章节数 / 关键词命中) 的扩展,**必须**配 held-out 测试集 + 真实质量 judge。
+
+**反例** (gbrain-evals 验证): 只检查 section header 存在的 scorer, 把空 header 算通过, 分数 1.00 但实际质量 0.28。
+
+**正面做法**:
+- darwin 主路径 8 维评分 = 独立 judge ✅
+- SkillOpt 集成 (本 §E) = 客观分数 = 硬指标 ✅
+- 二者**双轨** = 当前 4-skill 工具包已合规 ✅
+
+**来源**: gbrain-evals 2026-06-03-skillopt.md Result 2
