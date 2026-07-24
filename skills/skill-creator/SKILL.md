@@ -78,6 +78,57 @@ Based on the user interview, fill in these components:
 
 - **name**: Skill identifier
 - **description**: When to trigger, what it does. This is the primary triggering mechanism - include both what the skill does AND specific contexts for when to use it. All "when to use" info goes here, not in the body. Note: currently Claude has a tendency to "undertrigger" skills -- to not use them when they'd be useful. To combat this, please make the skill descriptions a little bit "pushy". So for instance, instead of "How to build a simple fast dashboard to display internal Anthropic data.", you might write "How to build a simple fast dashboard to display internal Anthropic data. Make sure to use this skill whenever the user mentions dashboards, data visualization, internal metrics, or wants to display any kind of company data, even if they don't explicitly ask for a 'dashboard.'"
+
+#### 角色化触发词规范（2026-07-24 用户实践沉淀）
+
+> 管理大量 skill（50+）时，纯功能关键词命名会导致两个问题：
+> 1. **触发不准**——用户不会原样说出功能名（"睡前故事" vs 用户实际说"哄孩子睡觉"）
+> 2. **误触发**——多个 skill 共享功能关键词（"写作"同时命中 nuwa / skill-creator / bedtime-story）
+>
+> 解法：每个 skill 用 **HR 职能视角** 命名 + **双触发词层**。
+
+**规则 1：角色化命名**
+
+description 第一句给 skill 一个角色身份（专员/管家/助手/检查员），按职能命名而非按功能命名：
+
+| ❌ 功能命名 | ✅ 角色命名 |
+|---|---|
+| "Hermes 配置中心" | **"Hermes 配置专员"** |
+| "飞书附件投递工具" | **"飞书投递专员"** |
+| "视频管线脚本" | **"视频制作管家"** |
+
+角色命名的好处：用户可以像调用员工一样调用 skill——"让配置专员检查一下"、"让投递专员发一下"。
+
+**规则 2：场景化触发词优先**
+
+触发词列表按"用户实际会怎么说"排序，不只列功能关键词。分两层：
+
+```
+触发词：<角色名>、<场景化短语>、<功能关键词>
+```
+
+示例（hermes-config-hub）：
+```
+触发词：Hermes 配置专员、配置专员、让配置专员看一下、让配置专员检查、
+       检查 hermes 配置、配置健康检查、改 model、切 provider...
+```
+
+- **场景化短语**（"让 X 看一下"、"让 X 检查"）覆盖用户最常用的调用方式
+- **功能关键词**（"改 model"、"切 provider"）覆盖显式技术需求
+
+**规则 3：避免纯功能关键词导致重复误触发**
+
+如果两个 skill 的触发词都包含"配置"，靠角色名区分：
+- "Hermes **配置**专员" → hermes-config-hub
+- "飞书**配置**助手" → feishu-setup
+
+角色名是唯一标识，功能关键词是补充。
+
+**自查清单**（创建/修改 skill 时过一遍）：
+1. description 第一句有没有角色名？
+2. 触发词列表里有没有"让 X 做 Y"的场景化短语？
+3. 触发词里有没有跟其他 skill 重叠的纯功能关键词？如果有，角色名能不能区分？
+
 - **compatibility**: Required tools, dependencies (optional, rarely needed)
 - **the rest of the skill :)**
 
